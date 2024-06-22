@@ -1,0 +1,36 @@
+#include <stdio.h>
+#include <string.h>
+
+// Initial Vulnerable Code
+void vulnerable_code() {
+    char buffer[256];
+
+    printf("Enter something (vulnerable): ");
+    fgets(buffer, sizeof(buffer), stdin);
+
+    printf("You entered (vulnerable): %s", buffer);
+}
+
+// Improved Secure Code
+void secure_code() {
+    char buffer[256];
+
+    printf("Enter something (secure): ");
+    if (fgets(buffer, sizeof(buffer), stdin) != NULL) {
+        // Remove newline character if present
+        buffer[strcspn(buffer, "\n")] = 0;
+
+        // Securely print the user input
+        printf("You entered (secure): %s\n", buffer);
+    } else {
+        printf("Error reading input.\n");
+    }
+}
+
+int main() {
+    // Run both the vulnerable and secure code for comparison
+    vulnerable_code();
+    secure_code();
+
+    return 0;
+}
