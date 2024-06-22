@@ -1,0 +1,111 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Function to create and write to the Snort rule file
+void create_snort_rule_file() {
+    FILE *file = fopen("/etc/snort/rules/local.rules", "w");
+    if (file == NULL) {
+        fprintf(stderr, "Error opening file for writing.\n");
+        exit(1);
+    }
+
+    fprintf(file,
+        "# Alert on HTTP traffic\n"
+        "alert tcp any any -> any 80 (msg:\"HTTP Traffic Detected\"; sid:1000001; rev:1;)\n"
+        "# Alert on SSH traffic\n"
+        "alert tcp any any -> any 22 (msg:\"SSH Traffic Detected\"; sid:1000002; rev:1;)\n"
+    );
+
+    fclose(file);
+}
+
+// Function to update Snort configuration file
+void update_snort_config() {
+    FILE *file = fopen("/etc/snort/snort.conf", "a");
+    if (file == NULL) {
+        fprintf(stderr, "Error opening snort.conf for appending.\n");
+        exit(1);
+    }
+
+    fprintf(file, "include /etc/snort/rules/local.rules\n");
+
+    fclose(file);
+}
+
+// Function to run Snort
+void run_snort() {
+    system("snort -A console -q -c /etc/snort/snort.conf -i eth0");
+}
+
+// Python script for visualizing detected alerts
+void create_python_script() {
+    FILE *file = fopen("visualize_alerts.py", "w");
+    if (file == NULL) {
+        fprintf(stderr, "Error opening file for writing.\n");
+        exit(1);
+    }
+
+    fprintf(file,
+        "import os\n"
+        "import re\n"
+        "import matplotlib.pyplot as plt\n"
+        "from collections import Counter\n"
+        "\n"
+        "# Path to the Snort alert log file\n"
+        "snort_log_file = '/var/log/snort/alert'\n"
+        "\n"
+        "# Function to parse Snort log file\n"
+        "def parse_snort_log(file_path):\n"
+        "    with open(file_path, 'r') as file:\n"
+        "        log_data = file.readlines()\n"
+        "    \n"
+        "    alerts = []\n"
+        "    for line in log_data:\n"
+        "        # Extract alert messages from log lines\n"
+        "        match = re.search(r'\\[\\*\\*\\] \\[1:(\\d+):\\d+\\] (.*) \\[\\*\\*\\]', line)\n"
+        "        if match:\n"
+        "            sid = match.group(1)\n"
+        "            message = match.group(2)\n"
+        "            alerts.append((sid, message))\n"
+        "    \n"
+        "    return alerts\n"
+        "\n"
+        "# Parse the Snort log file\n"
+        "alerts = parse_snort_log(snort_log_file)\n"
+        "\n"
+        "# Count the occurrences of each alert\n"
+        "alert_counter = Counter(alerts)\n"
+        "\n"
+        "# Prepare data for visualization\n"
+        "alert_messages = [alert[1] for alert in alert_counter.keys()]\n"
+        "alert_counts = [count for count in alert_counter.values()]\n"
+        "\n"
+        "# Create a bar chart to visualize the alerts\n"
+        "plt.figure(figsize=(10, 6))\n"
+        "plt.barh(alert_messages, alert_counts, color='skyblue')\n"
+        "plt.xlabel('Number of Alerts')\n"
+        "plt.ylabel('Alert Message')\n"
+        "plt.title('Snort Detected Alerts')\n"
+        "plt.show()\n"
+    );
+
+    fclose(file);
+}
+
+int main() {
+    // Create and configure Snort rule file
+    create_snort_rule_file();
+    update_snort_config();
+
+    // Run Snort (This will block further code execution. Typically you'd run this separately)
+    printf("Running Snort... Press Ctrl+C to stop.\n");
+    run_snort();
+
+    // Once Snort is stopped, create and run the Python script
+    create_python_script();
+    printf("Run the following command to visualize the alerts:\n");
+    printf("python3 visualize_alerts.py\n");
+
+    return 0;
+}
